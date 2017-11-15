@@ -2,15 +2,17 @@
 #include <fstream>
 #include <cstring>
 #include <queue>
+#include <cstdio>
 
-#define QUANT 100
+#define QUANT 100 //Time quantum.
 #define PATH "/Users/unstblecrsr/Desktop/CMPE322/cmpe-OS-projects/project1/project1/project1-supp/"
 
 using namespace std;
 
 /** Process struct:
  *  instr -> Holds the instructions' lengths
- *  pc -> The program counter
+ *  name -> Name of the process
+ *  file -> Name of the code file
  */
 struct Process{
     queue<int> instr;
@@ -25,8 +27,7 @@ struct Process{
 };
 
 void print_queue(int t, queue<Process> ps_queue){
-    cout << t;
-    cout << "::HEAD-";
+    cout << t << "::HEAD-";
     if(ps_queue.empty()){
         cout << "-TAIL" << endl;
         return;
@@ -43,11 +44,10 @@ void print_queue(int t, queue<Process> ps_queue){
 void rr_scheduler(queue<Process> & ps_q){
     int time = 0;
     queue<Process> ps_queue;
+    //Initial process has arrived.
     ps_queue.push(ps_q.front());
     print_queue(time, ps_queue);
-    //cout << ps_queue.front().name + " arrived 0" << endl;
     ps_q.pop();
-    
     while (!ps_queue.empty()) {
         int q_count = 0;
         while (q_count < QUANT && !ps_queue.front().instr.empty()) {
@@ -57,7 +57,7 @@ void rr_scheduler(queue<Process> & ps_q){
             time += t;
             if(!ps_q.empty()){
                 if(ps_q.front().arrival_time <= time){
-                    //cout << ps_q.front().name + " arrived " << ps_q.front().arrival_time << endl;
+                    //Process has arrived.
                     ps_queue.push(ps_q.front());
                     ps_q.pop();
                 }
@@ -73,7 +73,6 @@ void rr_scheduler(queue<Process> & ps_q){
             ps_queue.pop();
             print_queue(time, ps_queue);
         }
-        
     }
 }
 
@@ -82,13 +81,9 @@ int main(int argc, const char * argv[]) {
     //Reading from file
     ifstream myfile (PATH + string("definition_example_2.txt"));
     if (myfile.is_open()){
-        string pname;
-        string pdest;
-        string parrival;
+        string pname, pdest, parrival;
         while (myfile.peek()!=EOF){
-            myfile >> pname;
-            myfile >> pdest;
-            myfile >> parrival;
+            myfile >> pname >> pdest >> parrival;
             Process p(stoi(parrival), pdest, pname);
             ifstream instruction_file(PATH + pdest);
             string s, t;
@@ -103,10 +98,8 @@ int main(int argc, const char * argv[]) {
         }
         myfile.close();
     }
-    //Read finished.
-    
+    //Read finished. Now schedule!
+    //freopen("output1.txt", "w",stdout);
     rr_scheduler(ps_queue);
-    
-    
     return 0;
 }
