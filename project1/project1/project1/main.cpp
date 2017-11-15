@@ -1,26 +1,71 @@
 #include <iostream>
-#include <vector>
-#include <map>
 #include <fstream>
 #include <cstring>
+#include <queue>
+
+#define QUANT 100
+#define PATH "/Users/unstblecrsr/Desktop/CMPE322/cmpe-OS-projects/project1/project1/project1-supp/"
 
 using namespace std;
+
 /** Process struct:
  *  instr -> Holds the instructions' lengths
  *  pc -> The program counter
  */
 struct Process{
-    vector<int> instr;
-    int pc = 0;
+    queue<int> instr;
     int arrival_time = 0;
+    string name;
+    string file;
+    Process(int arr, string f, string n){
+        arrival_time = arr;
+        file = f;
+        name = n;
+    }
 };
+/** Round robin scheduler
+ */
+void rr_scheduler(queue<Process> & ps_q){
+    int time = 0;
+    queue<Process> ps_queue;
+    ps_queue.push(ps_q.front());
+    //cout << ps_queue.front().name + " arrived 0" << endl;
+    ps_q.pop();
+    
+    while (!ps_queue.empty()) {
+        int q_count = 0;
+        while (q_count < QUANT && !ps_queue.front().instr.empty()) {
+            //Executing instructions.
+            int t = ps_queue.front().instr.front();
+            ps_queue.front().instr.pop();
+            time += t;
+            if(!ps_q.empty()){
+                if(ps_q.front().arrival_time <= time){
+                    //cout << ps_q.front().name + " arrived " << ps_q.front().arrival_time << endl;
+                    ps_queue.push(ps_q.front());
+                    ps_q.pop();
+                }
+            }
+            q_count += t;
+        }
+        if(ps_queue.front().instr.empty()){
+            cout << ps_queue.front().name + " finished " << time << endl;
+            ps_queue.pop();
+        }
+        else{
+            cout << ps_queue.front().name + " rescheduled " << time << endl;
+            ps_queue.push(ps_queue.front());
+            ps_queue.pop();
+        }
+        
+    }
+}
 
 int main(int argc, const char * argv[]) {
-    map<string, Process> psMap;
-    string line;
-    ifstream myfile ("/Users/unstblecrsr/Desktop/CMPE322/cmpe-OS-projects/project1/project1/project1-supp/definition.txt");
-    if (myfile.is_open())
-    {
+    queue<Process> ps_queue;
+    //Reading from file
+    ifstream myfile (PATH + string("definition.txt"));
+    if (myfile.is_open()){
         string pname;
         string pdest;
         string parrival;
@@ -28,17 +73,24 @@ int main(int argc, const char * argv[]) {
             myfile >> pname;
             myfile >> pdest;
             myfile >> parrival;
-            cout << pname << " " << pdest << " " << parrival << endl;
-        
+            Process p(stoi(parrival), pdest, pname);
+            ifstream instruction_file(PATH + pdest);
+            string s, t;
+            if(instruction_file.is_open()){
+                while(instruction_file.peek() != EOF){
+                    instruction_file >> s;
+                    instruction_file >> t;
+                    p.instr.push(stoi(t));
+                }
+            }
+            ps_queue.push(p);
         }
         myfile.close();
     }
-    else{
-        cout << "cannot open" << endl;
-    }
+    //Read finished.
     
-
+    rr_scheduler(ps_queue);
     
-    std::cout << "Hello, World!\n";
+    
     return 0;
 }
