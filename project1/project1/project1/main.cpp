@@ -26,27 +26,27 @@ struct Process{
     }
 };
 
-void print_queue(int t, queue<Process> ps_queue){
-    cout << t << "::HEAD-";
+void print_queue(int t, queue<Process> ps_queue, ofstream & out){
+    out << t << "::HEAD-";
     if(ps_queue.empty()){
-        cout << "-TAIL" << endl;
+        out << "-TAIL" << endl;
         return;
     }
     while (!ps_queue.empty()) {
-        cout << ps_queue.front().name << "-";
+        out << ps_queue.front().name << "-";
         ps_queue.pop();
     }
-    cout << "TAIL" << endl;
+    out << "TAIL" << endl;
 }
 
 /** Round robin scheduler
  */
-void rr_scheduler(queue<Process> & ps_q){
+void rr_scheduler(queue<Process> & ps_q, ofstream & o){
     int time = 0;
     queue<Process> ps_queue;
     //Initial process has arrived.
     ps_queue.push(ps_q.front());
-    print_queue(time, ps_queue);
+    print_queue(time, ps_queue, o);
     ps_q.pop();
     while (!ps_queue.empty()) {
         int q_count = 0;
@@ -66,12 +66,12 @@ void rr_scheduler(queue<Process> & ps_q){
         }
         if(ps_queue.front().instr.empty()){
             ps_queue.pop();
-            print_queue(time, ps_queue);
+            print_queue(time, ps_queue, o);
         }
         else{
             ps_queue.push(ps_queue.front());
             ps_queue.pop();
-            print_queue(time, ps_queue);
+            print_queue(time, ps_queue, o);
         }
     }
 }
@@ -98,8 +98,8 @@ int main(int argc, const char * argv[]) {
         }
         myfile.close();
     }
-    //Read finished. Now schedule!
-    //freopen("output1.txt", "w",stdout);
-    rr_scheduler(ps_queue);
+    ofstream out (PATH + string("test.txt"));
+    rr_scheduler(ps_queue, out);
+    out.close();
     return 0;
 }
