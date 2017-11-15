@@ -23,12 +23,28 @@ struct Process{
         name = n;
     }
 };
+
+void print_queue(int t, queue<Process> ps_queue){
+    cout << t;
+    cout << "::HEAD-";
+    if(ps_queue.empty()){
+        cout << "-TAIL" << endl;
+        return;
+    }
+    while (!ps_queue.empty()) {
+        cout << ps_queue.front().name << "-";
+        ps_queue.pop();
+    }
+    cout << "TAIL" << endl;
+}
+
 /** Round robin scheduler
  */
 void rr_scheduler(queue<Process> & ps_q){
     int time = 0;
     queue<Process> ps_queue;
     ps_queue.push(ps_q.front());
+    print_queue(time, ps_queue);
     //cout << ps_queue.front().name + " arrived 0" << endl;
     ps_q.pop();
     
@@ -49,13 +65,13 @@ void rr_scheduler(queue<Process> & ps_q){
             q_count += t;
         }
         if(ps_queue.front().instr.empty()){
-            cout << ps_queue.front().name + " finished " << time << endl;
             ps_queue.pop();
+            print_queue(time, ps_queue);
         }
         else{
-            cout << ps_queue.front().name + " rescheduled " << time << endl;
             ps_queue.push(ps_queue.front());
             ps_queue.pop();
+            print_queue(time, ps_queue);
         }
         
     }
@@ -64,7 +80,7 @@ void rr_scheduler(queue<Process> & ps_q){
 int main(int argc, const char * argv[]) {
     queue<Process> ps_queue;
     //Reading from file
-    ifstream myfile (PATH + string("definition.txt"));
+    ifstream myfile (PATH + string("definition_example_2.txt"));
     if (myfile.is_open()){
         string pname;
         string pdest;
