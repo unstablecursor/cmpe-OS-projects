@@ -5,7 +5,6 @@
 #include <cstdio>
 
 #define QUANT 100 //Time quantum.
-#define PATH "/Users/unstblecrsr/Desktop/CMPE322/cmpe-OS-projects/project1/project1/project1-supp/"
 
 using namespace std;
 
@@ -77,15 +76,19 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
 }
 
 int main(int argc, const char * argv[]) {
+    if (argc != 3) {
+        cout << "Run the code with the following command: ./project1 [input_file] [output_file]" << endl;
+        return 1;
+    }
     queue<Process> ps_queue;
     //Reading from file
-    ifstream myfile (PATH + string("definition_example_2.txt"));
+    ifstream myfile(argv[1]);
     if (myfile.is_open()){
         string pname, pdest, parrival;
         while (myfile.peek()!=EOF){
             myfile >> pname >> pdest >> parrival;
             Process p(stoi(parrival), pdest, pname);
-            ifstream instruction_file(PATH + pdest);
+            ifstream instruction_file(pdest);
             string s, t;
             if(instruction_file.is_open()){
                 while(instruction_file.peek() != EOF){
@@ -98,7 +101,7 @@ int main(int argc, const char * argv[]) {
         }
         myfile.close();
     }
-    ofstream out (PATH + string("test.txt"));
+    ofstream out(argv[2]);
     rr_scheduler(ps_queue, out);
     out.close();
     return 0;
