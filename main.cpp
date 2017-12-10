@@ -150,7 +150,7 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
             else if(ps_queue.front().instr.front() == -1){
                 int sem_num = ps_queue.front().waits.front();
                 if(sems[sem_num].lock == 1 && (sems[sem_num].res == "" || sems[sem_num].res == ps_queue.front().name )){
-                    cout <<  ps_queue.front().name << " lock " << sem_num << " " << time << endl;
+                    //cout <<  ps_queue.front().name << " lock " << sem_num << " " << time << endl;
                     sems[sem_num].lock = 0;
                     ps_queue.front().waits.pop();
                     ps_queue.front().instr.pop();
@@ -210,7 +210,7 @@ int main(int argc, const char * argv[]) {
         while (myfile.peek()!=EOF){
             myfile >> pname >> pdest >> parrival;
             Process p(stoi(parrival), pdest, pname);
-            ifstream instruction_file(argv[1] + pdest);
+            ifstream instruction_file(pdest);
             string s, t;
             if(instruction_file.is_open()){
                 while(instruction_file.peek() != EOF){
