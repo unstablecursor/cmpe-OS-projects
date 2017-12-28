@@ -1,8 +1,8 @@
 /**
-  * Student Name: Recep Deniz Aksoy
-  * Student Number: 2014400150
-  * Project Number: #1
-  */
+ * Student Name: Recep Deniz Aksoy
+ * Student Number: 2014400150
+ * Project Number: #1
+ */
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -33,6 +33,7 @@ using namespace std;
  * consecutive.
  */
 struct Process{
+    queue<string> instruction;
     queue<int> instr;
     queue<int> waits;
     queue<int> signals;
@@ -59,6 +60,7 @@ struct Semaphore{
         lock = i;
     }
 };
+
 
 /** print_queue function:
  *  int t -> Time
@@ -112,7 +114,106 @@ void print_wait_queue(int t, queue<Process> ps_queue, int o){
  *  Basic round robin algorithm. Steps described inline below.
  */
 
+class Cache{
+public:
+    int c1 = -1;
+    int c2 = -1;
+    int lru = 0;
+    bool accessCache(int x){
+        if(x == c1){
+            lru = 1;
+            return true;
+        }
+        else if(x == c2){
+            lru = 2;
+            return true;
+        }
+        else{
+            if(lru == 1){
+                c2 = x;
+                lru = 2;
+            }
+            else{
+                c1 = x;
+                lru = 1;
+            }
+            return false;
+        }
+    }
+    Cache(){}
+};
+
+class Memory{
+public:
+    queue<Process> mem;
+    Cache c;
+    int mem_exit = INT_MAX;
+    Memory(){
+    }
+    bool giveMemory(Process p, int time, int x){
+        if(c.accessCache(x)){
+            return false;
+        }
+        else{
+            mem_exit = time;
+            mem.push(p);
+            print_wait_queue(time  - p.instr.front(), mem, 12);
+            return true;
+        }
+    }
+    Process getMemory(int time){
+        Process p = mem.front();
+        mem.pop();
+        print_wait_queue(time, mem, 12);
+        if(!mem.empty()){
+            mem_exit = time + mem.front().instr.front();
+        }
+        else{
+            mem_exit = INT_MAX;
+        }
+        p.instr.pop();
+        p.instruction.pop();
+        return p;
+    }
+};
+
+class Display{
+public:
+    vector<queue<Process>> disp;
+    vector<int> disp_exit = {INT_MAX,INT_MAX};
+    Display(){
+        queue<Process> disp1;
+        queue<Process> disp2;
+        disp.push_back(disp1);
+        disp.push_back(disp2);
+    }
+    void giveDisplay(Process p, int time, int x){
+        if(disp[x].empty()){
+            disp_exit[x] = time;
+        }
+        disp[x].push(p);
+        print_wait_queue(time - p.instr.front(), disp[x], (10 + x));
+    }
+    Process getDisplay(int x, int time){
+        Process p = disp[x].front();
+        disp[x].pop();
+        print_wait_queue(time, disp[x], (10 + x));
+        if(!disp[x].empty()){
+            disp_exit[x] = time + disp[x].front().instr.front();
+        }
+        else{
+            disp_exit[x] = INT_MAX;
+        }
+        p.instr.pop();
+        p.instruction.pop();
+        return p;
+    }
+};
+
 void rr_scheduler(queue<Process> & ps_q, ofstream & o){
+    
+    Display display;
+    Memory memory;
     int time = 0;
     vector<Semaphore> sems;
     for(int i = 0; i < 10; i++){
@@ -131,10 +232,37 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
     while (!ps_queue.empty()) {
         int q_count = 0;
         while (q_count < QUANT && !ps_queue.front().instr.empty()) {
+            
+            
             //Executing instructions.
             if(ps_queue.front().instr.front() > -1){
-                int t = ps_queue.front().instr.front();
-                ps_queue.front().instr.pop();
+                int t = 0;
+                string instruction = ps_queue.front().instruction.front();
+                
+                if(instruction[0] == 'd'){
+                    int n = stoi(instruction.substr(6));
+                    display.giveDisplay(ps_queue.front(), time + ps_queue.front().instr.front(), n);
+                    ps_queue.pop();
+                    print_queue(time, ps_queue, o);
+                    q_count = 0;
+                }
+                else if (instruction[0] == 'r'){
+                    int n = stoi(instruction.substr(6));
+                    if(memory.giveMemory(ps_queue.front(), time + ps_queue.front().instr.front(), n)){
+                        ps_queue.pop();
+                        print_queue(time, ps_queue, o);
+                        q_count = 0;
+                    }
+                    else{
+                        ps_queue.front().instr.pop();
+                        ps_queue.front().instruction.pop();
+                    }
+                }
+                else if (instruction[0] == 'i' || instruction[0] == 'e'){
+                    t = ps_queue.front().instr.front();
+                    ps_queue.front().instr.pop();
+                    ps_queue.front().instruction.pop();
+                }
                 time += t;
                 if(!ps_q.empty()){
                     if(ps_q.front().arrival_time <= time){
@@ -146,11 +274,22 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
                 }
                 q_count += t;
             }
+            
+            if(display.disp_exit[0] <= time){
+                ps_queue.push(display.getDisplay(0, time));
+            }
+            if(display.disp_exit[1] <= time){
+                ps_queue.push(display.getDisplay(1, time));
+            }
+            if(memory.mem_exit <= time){
+                ps_queue.push(memory.getMemory(time));
+            }
+            
             //Wait check
             else if(ps_queue.front().instr.front() == -1){
                 int sem_num = ps_queue.front().waits.front();
                 if(sems[sem_num].lock == 1 && (sems[sem_num].res == "" || sems[sem_num].res == ps_queue.front().name )){
-                    //cout <<  ps_queue.front().name << " lock " << sem_num << " " << time << endl;
+                    cout <<  ps_queue.front().name << " lock " << sem_num << " " << time << endl;
                     sems[sem_num].lock = 0;
                     ps_queue.front().waits.pop();
                     ps_queue.front().instr.pop();
@@ -183,6 +322,7 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
                 sems[sem_num].lock = 1;
             }
         }
+        
         if(ps_queue.front().instr.empty()){
             ps_queue.pop();
             print_queue(time, ps_queue, o);
@@ -198,7 +338,7 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
 
 int main(int argc, const char * argv[]) {
     //If arguments not matched throw error.
-     if (argc != 3) {
+    if (argc != 3) {
         cout << "Run the code with the following command: ./project1 [input_file] [output_file]" << endl;
         return 1;
     }
@@ -210,7 +350,7 @@ int main(int argc, const char * argv[]) {
         while (myfile.peek()!=EOF){
             myfile >> pname >> pdest >> parrival;
             Process p(stoi(parrival), pdest, pname);
-            ifstream instruction_file(pdest);
+            ifstream instruction_file(argv[1] + pdest);
             string s, t;
             if(instruction_file.is_open()){
                 while(instruction_file.peek() != EOF){
@@ -218,13 +358,16 @@ int main(int argc, const char * argv[]) {
                     instruction_file >> t;
                     if(s[0] == 'w'){
                         p.instr.push(-1);
+                        p.instruction.push(s);
                         p.waits.push(s[6] - '0');
                     }
                     else if(s[0] == 's'){
                         p.instr.push(-2);
+                        p.instruction.push(s);
                         p.signals.push(s[6] - '0');
                     }
                     else{
+                        p.instruction.push(s);
                         p.instr.push(stoi(t));
                     }
                 }
