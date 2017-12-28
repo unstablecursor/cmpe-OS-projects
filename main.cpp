@@ -1,20 +1,15 @@
 /**
  * Student Name: Recep Deniz Aksoy
  * Student Number: 2014400150
- * Project Number: #1
+ * Project Number: #2
  */
 #include <iostream>
 #include <fstream>
 #include <cstring>
 #include <queue>
+#include <climits>
 #include <cstdio>
 
-
-/**
- * In this project we re asked to implement an OS, starting from
- * process scheduler which executes using round robin algorithm.
- *
- */
 
 #define QUANT 100 //Time quantum.
 
@@ -114,6 +109,10 @@ void print_wait_queue(int t, queue<Process> ps_queue, int o){
  *  Basic round robin algorithm. Steps described inline below.
  */
 
+/**
+ *Cache class. Has method that ensures a cache that is LRU.
+*/
+
 class Cache{
 public:
     int c1 = -1;
@@ -142,6 +141,12 @@ public:
     }
     Cache(){}
 };
+
+/**
+  * Memory class. For placing a process in wait queue,
+  * we have giveMemory method. Also getMemory for getting process when
+  * it's done with memory access.
+*/
 
 class Memory{
 public:
@@ -176,7 +181,11 @@ public:
         return p;
     }
 };
-
+/**
+  * Display class. For placing a process in wait queue,
+  * we have giveDisplay method. Also getDisplay for getting process when
+  * it's done with display access.
+*/
 class Display{
 public:
     vector<queue<Process>> disp;
@@ -238,7 +247,7 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
             if(ps_queue.front().instr.front() > -1){
                 int t = 0;
                 string instruction = ps_queue.front().instruction.front();
-                
+                //For display instructions.
                 if(instruction[0] == 'd'){
                     int n = stoi(instruction.substr(6));
                     display.giveDisplay(ps_queue.front(), time + ps_queue.front().instr.front(), n);
@@ -246,6 +255,7 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
                     print_queue(time, ps_queue, o);
                     q_count = 0;
                 }
+		//For memory operations.	
                 else if (instruction[0] == 'r'){
                     int n = stoi(instruction.substr(6));
                     if(memory.giveMemory(ps_queue.front(), time + ps_queue.front().instr.front(), n)){
@@ -274,13 +284,15 @@ void rr_scheduler(queue<Process> & ps_q, ofstream & o){
                 }
                 q_count += t;
             }
-            
+            //Display 0 check.
             if(display.disp_exit[0] <= time){
                 ps_queue.push(display.getDisplay(0, time));
             }
+	    //Display 1 check.
             if(display.disp_exit[1] <= time){
                 ps_queue.push(display.getDisplay(1, time));
             }
+	    //Memory check.
             if(memory.mem_exit <= time){
                 ps_queue.push(memory.getMemory(time));
             }
@@ -350,7 +362,7 @@ int main(int argc, const char * argv[]) {
         while (myfile.peek()!=EOF){
             myfile >> pname >> pdest >> parrival;
             Process p(stoi(parrival), pdest, pname);
-            ifstream instruction_file(argv[1] + pdest);
+            ifstream instruction_file(pdest);
             string s, t;
             if(instruction_file.is_open()){
                 while(instruction_file.peek() != EOF){
